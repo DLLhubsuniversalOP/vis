@@ -957,3 +957,106 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         applyHighlight(player)
     end
 end)
+
+
+
+--// ==================== TRIGGERBOT (T) - LKM ====================
+local TriggerSettings = {
+    Enabled = false,
+    Radius = 300,
+    TargetPart = "Head",
+}
+
+local TriggerConnection = nil
+
+local function GetClosestTarget()
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local bestTarget, bestDist = nil, TriggerSettings.Radius
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            local part = char:FindFirstChild(TriggerSettings.TargetPart)
+            if humanoid and humanoid.Health > 0 and part then
+                local screenPos, visible = Camera:WorldToViewportPoint(part.Position)
+                if visible and screenPos.Z > 0 then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    if dist < bestDist then
+                        bestDist = dist
+                        bestTarget = char
+                    end
+                end
+            end
+        end
+    end
+
+    -- Боты / NPC
+    for _, model in ipairs(Workspace:GetDescendants()) do
+        if model:IsA("Model") then
+            local humanoid = model:FindFirstChildOfClass("Humanoid")
+            local part = model:FindFirstChild(TriggerSettings.TargetPart)
+            if humanoid and humanoid.Health > 0 and part then
+                local isPlayer = false
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p.Character == model then isPlayer = true break end
+                end
+                if not isPlayer then
+                    local screenPos, visible = Camera:WorldToViewportPoint(part.Position)
+                    if visible and screenPos.Z > 0 then
+                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                        if dist < bestDist then
+                            bestDist = dist
+                            bestTarget = model
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return bestTarget
+end
+
+local function ClickMouse()
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    local mouse = LocalPlayer:GetMouse()
+    pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(mouse.X, mouse.Y, 0, true, game, 1)
+        task.wait(0.01)
+        VirtualInputManager:SendMouseButtonEvent(mouse.X, mouse.Y, 0, false, game, 1)
+    end)
+end
+
+local function StartTrigger()
+    if TriggerConnection then return end
+    TriggerConnection = RunService.Heartbeat:Connect(function()
+        if not TriggerSettings.Enabled then return end
+        local target = GetClosestTarget()
+        if target then
+            ClickMouse()
+        end
+    end)
+end
+
+local function StopTrigger()
+    if TriggerConnection then
+        TriggerConnection:Disconnect()
+        TriggerConnection = nil
+    end
+end
+
+-- Переключение на T
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.T then
+        TriggerSettings.Enabled = not TriggerSettings.Enabled
+        if TriggerSettings.Enabled then
+            StartTrigger()
+            Library:Notify({Title = "TriggerBot", Content = "ON", Duration = 1})
+        else
+            StopTrigger()
+            Library:Notify({Title = "TriggerBot", Content = "OFF", Duration = 1})
+        end
+    end
+end)
