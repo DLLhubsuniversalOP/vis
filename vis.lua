@@ -958,9 +958,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-
-
---// ==================== TRIGGERBOT (T) - LKM ====================
+--// ==================== TRIGGERBOT (T) - UNIVERSAL (NO VIM) ====================
 local TriggerSettings = {
     Enabled = false,
     Radius = 300,
@@ -1018,13 +1016,12 @@ local function GetClosestTarget()
     return bestTarget
 end
 
+--// ИСПОЛЬЗУЕМ ФУНКЦИИ ИНЖЕКТОРА, А НЕ VIRTUALINPUTMANAGER
 local function ClickMouse()
-    local VirtualInputManager = game:GetService("VirtualInputManager")
-    local mouse = LocalPlayer:GetMouse()
+    -- mouse1click - это стандартная функция инжекторов (Synapse, Krnl, Real и т.д.)
+    -- Она эмулирует нажатие ЛКМ на уровне ОС, а не через Roblox API
     pcall(function()
-        VirtualInputManager:SendMouseButtonEvent(mouse.X, mouse.Y, 0, true, game, 1)
-        task.wait(0.01)
-        VirtualInputManager:SendMouseButtonEvent(mouse.X, mouse.Y, 0, false, game, 1)
+        mouse1click()
     end)
 end
 
@@ -1053,10 +1050,16 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         TriggerSettings.Enabled = not TriggerSettings.Enabled
         if TriggerSettings.Enabled then
             StartTrigger()
-            Library:Notify({Title = "TriggerBot", Content = "ON", Duration = 1})
+            if Library and Library.Notify then
+                Library:Notify({Title = "TriggerBot", Content = "ON", Duration = 1})
+            end
         else
             StopTrigger()
-            Library:Notify({Title = "TriggerBot", Content = "OFF", Duration = 1})
+            if Library and Library.Notify then
+                Library:Notify({Title = "TriggerBot", Content = "OFF", Duration = 1})
+            end
         end
     end
 end)
+
+
